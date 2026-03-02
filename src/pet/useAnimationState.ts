@@ -47,6 +47,8 @@ export function useAnimationState() {
         wave: 900,
         happy: 900,
         confused: 800,
+        angry: 720,
+        lazy: 1600,
       };
       const duration = nonLoopDurations[newState];
       if (duration) {

@@ -1,27 +1,94 @@
-import { useEffect, useCallback } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { load } from "@tauri-apps/plugin-store";
 import { PetSprite } from "./PetSprite";
 import { useAnimationState } from "./useAnimationState";
+import { randomPokeReaction } from "./petAnimations";
+
+const DOUBLE_CLICK_THRESHOLD = 300; // ms
 
 export function PetWindow() {
   const { state, triggerState } = useAnimationState();
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const isDraggingRef = useRef(false);
 
-  // Default: click-through enabled. Sprite area handles mouse events.
+  // Restore saved position on mount
   useEffect(() => {
-    invoke("set_click_through", { ignore: true }).catch(console.error);
+    (async () => {
+      try {
+        const store = await load("pet-state.json");
+        const x = await store.get<number>("x");
+        const y = await store.get<number>("y");
+        if (x != null && y != null) {
+          await getCurrentWindow().setPosition(
+            new (await import("@tauri-apps/api/dpi")).PhysicalPosition(x, y)
+          );
+        }
+      } catch {
+        // First launch, no saved position
+      }
+    })();
   }, []);
 
-  const handleMouseEnter = useCallback(() => {
-    invoke("set_click_through", { ignore: false }).catch(console.error);
+  // Save position when window moves
+  useEffect(() => {
+    let saveTimer: ReturnType<typeof setTimeout>;
+    const unlisten = getCurrentWindow().onMoved(async (e) => {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(async () => {
+        try {
+          const store = await load("pet-state.json");
+          await store.set("x", e.payload.x);
+          await store.set("y", e.payload.y);
+          await store.save();
+        } catch {
+          // ignore save errors
+        }
+      }, 500);
+    });
+    return () => { unlisten.then((fn) => fn()); };
   }, []);
 
-  const handleMouseLeave = useCallback(() => {
-    invoke("set_click_through", { ignore: true }).catch(console.error);
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    isDraggingRef.current = false;
+
+    const startX = e.screenX;
+    const startY = e.screenY;
+
+    const onMove = (me: MouseEvent) => {
+      if (Math.abs(me.screenX - startX) > 3 || Math.abs(me.screenY - startY) > 3) {
+        if (!isDraggingRef.current) {
+          isDraggingRef.current = true;
+          getCurrentWindow().startDragging();
+        }
+      }
+    };
+
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   }, []);
 
   const handleClick = useCallback(() => {
-    triggerState("wave");
-    invoke("toggle_chat_window").catch(console.error);
+    if (isDraggingRef.current) return; // Ignore click after drag
+
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = undefined;
+      triggerState("wave");
+      invoke("toggle_chat_window").catch(console.error);
+    } else {
+      clickTimerRef.current = setTimeout(() => {
+        clickTimerRef.current = undefined;
+        triggerState(randomPokeReaction());
+      }, DOUBLE_CLICK_THRESHOLD);
+    }
   }, [triggerState]);
 
   return (
@@ -36,10 +103,9 @@ export function PetWindow() {
       }}
     >
       <div
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        onMouseDown={handleMouseDown}
         onClick={handleClick}
-        style={{ cursor: "pointer" }}
+        style={{ cursor: "grab" }}
       >
         <PetSprite state={state} />
       </div>

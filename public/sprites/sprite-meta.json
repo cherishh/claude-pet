@@ -9,6 +9,8 @@
     "thinking":     { "row": 3, "frames": 4, "frameInterval": 200, "loop": true },
     "happy":        { "row": 4, "frames": 6, "frameInterval": 150, "loop": false },
     "confused":     { "row": 5, "frames": 4, "frameInterval": 200, "loop": false },
-    "wave":         { "row": 6, "frames": 6, "frameInterval": 150, "loop": false }
+    "wave":         { "row": 6, "frames": 6, "frameInterval": 150, "loop": false },
+    "angry":        { "row": 7, "frames": 6, "frameInterval": 120, "loop": false },
+    "lazy":         { "row": 8, "frames": 4, "frameInterval": 400, "loop": false }
   }
 }

@@ -1,41 +1,46 @@
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
-import type { ChatMessage } from "../shared/types";
+import { useClaudeChat } from "./useClaudeChat";
 
 export function ChatWindow() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { messages, isLoading, sendMessage } = useClaudeChat();
+  const [claudeAvailable, setClaudeAvailable] = useState(true);
 
-  const handleSend = async (text: string) => {
-    const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: text,
-    };
-    setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
+  const handleClose = useCallback(() => {
+    getCurrentWindow().hide();
+  }, []);
 
-    // Placeholder: will be replaced by Claude integration in Phase 4
-    const assistantMsg: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "assistant",
-      content: "Claude integration coming in Phase 4...",
-    };
-    setTimeout(() => {
-      setMessages((prev) => [...prev, assistantMsg]);
-      setIsLoading(false);
-    }, 1000);
-  };
+  useEffect(() => {
+    invoke("check_claude_available").then((ok) => {
+      setClaudeAvailable(ok as boolean);
+    });
+  }, []);
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <span style={styles.headerDot} />
+        <span style={{ ...styles.headerDot, background: claudeAvailable ? "#4ade80" : "#f87171" }} />
         <span style={styles.headerTitle}>Chat with Claude</span>
+        <button onClick={handleClose} style={styles.closeBtn}>×</button>
       </div>
+      {!claudeAvailable && (
+        <div style={styles.banner}>
+          <strong>claude</strong> CLI not found in PATH.{" "}
+          <a
+            href="https://docs.anthropic.com/en/docs/claude-code"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "#60a5fa" }}
+          >
+            Install Claude Code
+          </a>
+        </div>
+      )}
       <ChatMessages messages={messages} />
-      <ChatInput onSend={handleSend} disabled={isLoading} />
+      <ChatInput onSend={sendMessage} disabled={isLoading || !claudeAvailable} />
     </div>
   );
 }
@@ -66,10 +71,27 @@ const styles = {
     width: 8,
     height: 8,
     borderRadius: "50%",
-    background: "#4ade80",
   },
   headerTitle: {
     fontWeight: 600,
     fontSize: 13,
+    flex: 1,
+  },
+  closeBtn: {
+    background: "none",
+    border: "none",
+    color: "#888",
+    fontSize: 20,
+    cursor: "pointer",
+    padding: "0 4px",
+    lineHeight: 1,
+    WebkitAppRegion: "no-drag" as unknown as string,
+  },
+  banner: {
+    padding: "10px 16px",
+    background: "#2d1b1b",
+    borderBottom: "1px solid #5c2424",
+    fontSize: 13,
+    color: "#f87171",
   },
 } as const;

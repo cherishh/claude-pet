@@ -110,6 +110,8 @@ function drawPlaceholder(
     "happy": "#44dd44",
     "confused": "#ff6644",
     "wave": "#ff88cc",
+    "angry": "#ff4444",
+    "lazy": "#b8a9c9",
   };
 
   const cx = w / 2;
@@ -133,8 +135,8 @@ function drawPlaceholder(
 
   // Pupils
   ctx.fillStyle = "#333";
-  if (state === "idle-sleep") {
-    // Closed eyes (lines)
+  if (state === "idle-sleep" || state === "lazy") {
+    // Closed / half-closed eyes
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -148,6 +150,17 @@ function drawPlaceholder(
     ctx.arc(cx - 12 + eyeOffsetX, cy - 10, 4, 0, Math.PI * 2);
     ctx.arc(cx + 12 + eyeOffsetX, cy - 10, 4, 0, Math.PI * 2);
     ctx.fill();
+    // Angry eyebrows
+    if (state === "angry") {
+      ctx.strokeStyle = "#333";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx - 18, cy - 22);
+      ctx.lineTo(cx - 6, cy - 16);
+      ctx.moveTo(cx + 18, cy - 22);
+      ctx.lineTo(cx + 6, cy - 16);
+      ctx.stroke();
+    }
   }
 
   // Mouth varies by state
@@ -156,6 +169,11 @@ function drawPlaceholder(
   ctx.beginPath();
   if (state === "happy") {
     ctx.arc(cx, cy + 8, 12, 0, Math.PI);
+  } else if (state === "angry") {
+    ctx.arc(cx, cy + 14, 10, Math.PI, 0); // frown
+  } else if (state === "lazy") {
+    ctx.moveTo(cx - 10, cy + 12);
+    ctx.quadraticCurveTo(cx, cy + 8, cx + 10, cy + 12); // sleepy squiggle
   } else if (state === "confused") {
     ctx.moveTo(cx - 8, cy + 12);
     ctx.lineTo(cx + 8, cy + 8);

@@ -17,6 +17,12 @@ export function isIdleState(state: PetState): boolean {
   return state.startsWith("idle-");
 }
 
+export const POKE_REACTIONS: PetState[] = ["happy", "angry", "lazy", "confused", "wave"];
+
+export function randomPokeReaction(): PetState {
+  return POKE_REACTIONS[Math.floor(Math.random() * POKE_REACTIONS.length)];
+}
+
 export function getAnimationDef(
   meta: SpriteMeta,
   state: PetState

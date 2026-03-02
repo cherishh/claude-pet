@@ -5,7 +5,9 @@ export type PetState =
   | "thinking"
   | "happy"
   | "confused"
-  | "wave";
+  | "wave"
+  | "angry"
+  | "lazy";
 
 export interface AnimationDef {
   row: number;

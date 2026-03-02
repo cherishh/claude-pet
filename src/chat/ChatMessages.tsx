@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import Markdown from "react-markdown";
 import type { ChatMessage } from "../shared/types";
 
 interface Props {
@@ -16,7 +17,7 @@ export function ChatMessages({ messages }: Props) {
     return (
       <div style={styles.empty}>
         <div style={styles.emptyIcon}>🐾</div>
-        <div>Click to start chatting!</div>
+        <div>Double-click the pet to start chatting!</div>
       </div>
     );
   }
@@ -35,7 +36,11 @@ export function ChatMessages({ messages }: Props) {
             {msg.role === "user" ? "You" : "Claude"}
           </div>
           <div style={styles.content}>
-            {msg.content}
+            {msg.role === "assistant" ? (
+              <Markdown>{msg.content}</Markdown>
+            ) : (
+              msg.content
+            )}
             {msg.isStreaming && <span style={styles.cursor}>▌</span>}
           </div>
         </div>
