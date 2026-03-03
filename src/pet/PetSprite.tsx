@@ -1,23 +1,26 @@
 import { useRef } from "react";
-import type { PetState } from "../shared/types";
+import type { SpriteMeta } from "../shared/types";
 import { useSpriteAnimation } from "./useSpriteAnimation";
 
 interface PetSpriteProps {
-  state: PetState;
+  state: string;
+  meta: SpriteMeta | null;
 }
 
-export function PetSprite({ state }: PetSpriteProps) {
+export function PetSprite({ state, meta }: PetSpriteProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useSpriteAnimation(canvasRef, state);
+  useSpriteAnimation(canvasRef, state, meta);
+
+  const size = meta?.character.displaySize ?? 128;
 
   return (
     <canvas
       ref={canvasRef}
       style={{
         imageRendering: "pixelated",
-        width: 128,
-        height: 128,
+        width: size,
+        height: size,
       }}
     />
   );

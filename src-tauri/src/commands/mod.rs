@@ -1,2 +1,2 @@
-pub mod claude;
+pub mod ai;
 pub mod window;

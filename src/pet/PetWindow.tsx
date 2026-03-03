@@ -9,7 +9,7 @@ import { randomPokeReaction } from "./petAnimations";
 const DOUBLE_CLICK_THRESHOLD = 300; // ms
 
 export function PetWindow() {
-  const { state, triggerState } = useAnimationState();
+  const { state, meta, triggerState } = useAnimationState();
   const clickTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const isDraggingRef = useRef(false);
 
@@ -76,7 +76,7 @@ export function PetWindow() {
   }, []);
 
   const handleClick = useCallback(() => {
-    if (isDraggingRef.current) return; // Ignore click after drag
+    if (isDraggingRef.current) return;
 
     if (clickTimerRef.current) {
       clearTimeout(clickTimerRef.current);
@@ -86,10 +86,12 @@ export function PetWindow() {
     } else {
       clickTimerRef.current = setTimeout(() => {
         clickTimerRef.current = undefined;
-        triggerState(randomPokeReaction());
+        if (meta) {
+          triggerState(randomPokeReaction(meta));
+        }
       }, DOUBLE_CLICK_THRESHOLD);
     }
-  }, [triggerState]);
+  }, [triggerState, meta]);
 
   return (
     <div
@@ -107,7 +109,7 @@ export function PetWindow() {
         onClick={handleClick}
         style={{ cursor: "grab" }}
       >
-        <PetSprite state={state} />
+        <PetSprite state={state} meta={meta} />
       </div>
     </div>
   );

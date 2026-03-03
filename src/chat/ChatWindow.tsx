@@ -3,44 +3,47 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
-import { useClaudeChat } from "./useClaudeChat";
+import { useAIChat } from "./useAIChat";
 
 export function ChatWindow() {
-  const { messages, isLoading, sendMessage } = useClaudeChat();
-  const [claudeAvailable, setClaudeAvailable] = useState(true);
+  const { messages, isLoading, sendMessage, provider } = useAIChat();
+  const [aiAvailable, setAiAvailable] = useState(true);
 
   const handleClose = useCallback(() => {
     getCurrentWindow().hide();
   }, []);
 
   useEffect(() => {
-    invoke("check_claude_available").then((ok) => {
-      setClaudeAvailable(ok as boolean);
+    invoke("check_ai_available", {
+      binary: provider.binary,
+      checkCommand: provider.checkCommand,
+    }).then((ok) => {
+      setAiAvailable(ok as boolean);
     });
-  }, []);
+  }, [provider]);
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <span style={{ ...styles.headerDot, background: claudeAvailable ? "#4ade80" : "#f87171" }} />
-        <span style={styles.headerTitle}>Chat with Claude</span>
+        <span style={{ ...styles.headerDot, background: aiAvailable ? "#4ade80" : "#f87171" }} />
+        <span style={styles.headerTitle}>Chat with {provider.displayName}</span>
         <button onClick={handleClose} style={styles.closeBtn}>×</button>
       </div>
-      {!claudeAvailable && (
+      {!aiAvailable && (
         <div style={styles.banner}>
-          <strong>claude</strong> CLI not found in PATH.{" "}
+          <strong>{provider.binary}</strong> CLI not found in PATH.{" "}
           <a
-            href="https://docs.anthropic.com/en/docs/claude-code"
+            href={provider.installUrl}
             target="_blank"
             rel="noreferrer"
             style={{ color: "#60a5fa" }}
           >
-            Install Claude Code
+            Install {provider.displayName}
           </a>
         </div>
       )}
-      <ChatMessages messages={messages} />
-      <ChatInput onSend={sendMessage} disabled={isLoading || !claudeAvailable} />
+      <ChatMessages messages={messages} assistantName={provider.displayName} />
+      <ChatInput onSend={sendMessage} disabled={isLoading || !aiAvailable} assistantName={provider.displayName} />
     </div>
   );
 }

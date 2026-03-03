@@ -30,7 +30,7 @@
       },
       {
         "label": "chat",
-        "title": "Chat with Claude",
+        "title": "Desktop Pet Chat",
         "url": "/chat",
         "width": 400,
         "height": 600,

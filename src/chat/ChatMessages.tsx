@@ -4,9 +4,10 @@ import type { ChatMessage } from "../shared/types";
 
 interface Props {
   messages: ChatMessage[];
+  assistantName: string;
 }
 
-export function ChatMessages({ messages }: Props) {
+export function ChatMessages({ messages, assistantName }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export function ChatMessages({ messages }: Props) {
           }}
         >
           <div style={styles.role}>
-            {msg.role === "user" ? "You" : "Claude"}
+            {msg.role === "user" ? "You" : assistantName}
           </div>
           <div style={styles.content}>
             {msg.role === "assistant" ? (

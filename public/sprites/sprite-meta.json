@@ -1,16 +1,17 @@
 {
+  "character": { "name": "Lobster", "displaySize": 128 },
   "spriteWidth": 32,
   "spriteHeight": 32,
   "cols": 8,
   "animations": {
-    "idle-breathe": { "row": 0, "frames": 4, "frameInterval": 300, "loop": true },
-    "idle-look":    { "row": 1, "frames": 4, "frameInterval": 250, "loop": true },
-    "idle-sleep":   { "row": 2, "frames": 4, "frameInterval": 500, "loop": true },
-    "thinking":     { "row": 3, "frames": 4, "frameInterval": 200, "loop": true },
-    "happy":        { "row": 4, "frames": 6, "frameInterval": 150, "loop": false },
-    "confused":     { "row": 5, "frames": 4, "frameInterval": 200, "loop": false },
-    "wave":         { "row": 6, "frames": 6, "frameInterval": 150, "loop": false },
-    "angry":        { "row": 7, "frames": 6, "frameInterval": 120, "loop": false },
-    "lazy":         { "row": 8, "frames": 4, "frameInterval": 400, "loop": false }
+    "idle-breathe": { "row": 0, "frames": 4, "frameInterval": 300, "loop": true,  "category": "idle" },
+    "idle-look":    { "row": 1, "frames": 4, "frameInterval": 250, "loop": true,  "category": "idle" },
+    "idle-sleep":   { "row": 2, "frames": 4, "frameInterval": 500, "loop": true,  "category": "sleep" },
+    "thinking":     { "row": 3, "frames": 4, "frameInterval": 200, "loop": true,  "category": "reaction" },
+    "happy":        { "row": 4, "frames": 6, "frameInterval": 150, "loop": false, "category": "poke" },
+    "confused":     { "row": 5, "frames": 4, "frameInterval": 200, "loop": false, "category": "poke" },
+    "wave":         { "row": 6, "frames": 6, "frameInterval": 150, "loop": false, "category": "greet" },
+    "angry":        { "row": 7, "frames": 6, "frameInterval": 120, "loop": false, "category": "poke" },
+    "lazy":         { "row": 8, "frames": 4, "frameInterval": 400, "loop": false, "category": "poke" }
   }
 }

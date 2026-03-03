@@ -1,11 +1,35 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { invoke, Channel } from "@tauri-apps/api/core";
 import { emitTo } from "@tauri-apps/api/event";
-import type { ChatMessage, ClaudeStreamEvent } from "../shared/types";
+import type { ChatMessage, AIStreamEvent, AIProviderConfig } from "../shared/types";
 
-export function useClaudeChat() {
+const DEFAULT_PROVIDER: AIProviderConfig = {
+  name: "Claude",
+  displayName: "Claude",
+  binary: "claude",
+  envRemove: ["CLAUDECODE"],
+  args: ["--print", "--output-format", "stream-json"],
+  streamFormat: "claude-stream-json",
+  checkCommand: "which",
+  installUrl: "https://docs.anthropic.com/en/docs/claude-code",
+};
+
+export function useAIChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [provider, setProvider] = useState<AIProviderConfig>(DEFAULT_PROVIDER);
+
+  useEffect(() => {
+    fetch("/ai-provider.json")
+      .then((res) => {
+        if (!res.ok) throw new Error(`${res.status}`);
+        return res.json();
+      })
+      .then((config: AIProviderConfig) => setProvider(config))
+      .catch(() => {
+        // Fall back to default provider
+      });
+  }, []);
 
   const sendMessage = useCallback(async (text: string) => {
     const userMsg: ChatMessage = {
@@ -23,7 +47,7 @@ export function useClaudeChat() {
     setIsLoading(true);
     emitTo("pet", "pet-reaction", { state: "thinking" });
 
-    const onEvent = new Channel<ClaudeStreamEvent>();
+    const onEvent = new Channel<AIStreamEvent>();
     onEvent.onmessage = (event) => {
       switch (event.type) {
         case "textDelta":
@@ -65,7 +89,13 @@ export function useClaudeChat() {
     };
 
     try {
-      await invoke("send_to_claude", { prompt: text, onEvent });
+      await invoke("send_message", {
+        prompt: text,
+        binary: provider.binary,
+        args: provider.args,
+        envRemove: provider.envRemove,
+        onEvent,
+      });
     } catch (err) {
       setMessages((prev) =>
         prev.map((m) =>
@@ -77,7 +107,7 @@ export function useClaudeChat() {
       setIsLoading(false);
       emitTo("pet", "pet-reaction", { state: "confused" });
     }
-  }, []);
+  }, [provider]);
 
-  return { messages, isLoading, sendMessage };
+  return { messages, isLoading, sendMessage, provider };
 }

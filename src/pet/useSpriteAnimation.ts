@@ -1,29 +1,25 @@
-import { useRef, useEffect, useState } from "react";
-import type { PetState, SpriteMeta } from "../shared/types";
-import { loadSpriteMeta, getAnimationDef } from "./petAnimations";
-
-const SCALE = 4; // 32px * 4 = 128px rendered size
+import { useRef, useEffect } from "react";
+import type { SpriteMeta, AnimationCategory } from "../shared/types";
+import { getAnimationDef } from "./petAnimations";
 
 export function useSpriteAnimation(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
-  state: PetState,
+  state: string,
+  meta: SpriteMeta | null,
   onAnimationEnd?: () => void
 ) {
-  const [meta, setMeta] = useState<SpriteMeta | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const frameRef = useRef(0);
   const lastFrameTimeRef = useRef(0);
   const rafRef = useRef<number>(0);
 
-  // Load sprite meta and image
+  // Load sprite image
   useEffect(() => {
-    loadSpriteMeta().then(setMeta);
     const img = new Image();
     img.src = "/sprites/spritesheet.png";
     img.onload = () => {
       imageRef.current = img;
     };
-    // If image fails to load, we'll use placeholder rendering
     img.onerror = () => {
       imageRef.current = null;
     };
@@ -46,11 +42,14 @@ export function useSpriteAnimation(
     if (!ctx) return;
 
     const animDef = getAnimationDef(meta, state);
+    if (!animDef) return;
+
     const w = meta.spriteWidth;
     const h = meta.spriteHeight;
+    const scale = meta.character.displaySize / w;
 
-    canvas.width = w * SCALE;
-    canvas.height = h * SCALE;
+    canvas.width = w * scale;
+    canvas.height = h * scale;
     ctx.imageSmoothingEnabled = false;
 
     const draw = (timestamp: number) => {
@@ -65,9 +64,7 @@ export function useSpriteAnimation(
           if (animDef.loop) {
             frameRef.current = 0;
           } else {
-            // Animation ended
             onAnimationEnd?.();
-            // Stay on last frame
             frameRef.current = animDef.frames - 1;
           }
         } else {
@@ -78,13 +75,11 @@ export function useSpriteAnimation(
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (imageRef.current) {
-        // Draw from spritesheet
         const sx = (frameRef.current % meta.cols) * w;
         const sy = animDef.row * h;
-        ctx.drawImage(imageRef.current, sx, sy, w, h, 0, 0, w * SCALE, h * SCALE);
+        ctx.drawImage(imageRef.current, sx, sy, w, h, 0, 0, w * scale, h * scale);
       } else {
-        // Placeholder: colored circle with state label
-        drawPlaceholder(ctx, w * SCALE, h * SCALE, state, frameRef.current);
+        drawPlaceholder(ctx, w * scale, h * scale, state, animDef.category, frameRef.current);
       }
 
       rafRef.current = requestAnimationFrame(draw);
@@ -95,32 +90,29 @@ export function useSpriteAnimation(
   }, [meta, state, canvasRef, onAnimationEnd]);
 }
 
+const categoryColors: Record<AnimationCategory, string> = {
+  idle: "#4a9eff",
+  sleep: "#7a7aff",
+  poke: "#ff6644",
+  greet: "#ff88cc",
+  reaction: "#ffaa00",
+};
+
 function drawPlaceholder(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
-  state: PetState,
+  state: string,
+  category: AnimationCategory,
   frame: number
 ) {
-  const colors: Record<string, string> = {
-    "idle-breathe": "#4a9eff",
-    "idle-look": "#4a9eff",
-    "idle-sleep": "#7a7aff",
-    "thinking": "#ffaa00",
-    "happy": "#44dd44",
-    "confused": "#ff6644",
-    "wave": "#ff88cc",
-    "angry": "#ff4444",
-    "lazy": "#b8a9c9",
-  };
-
   const cx = w / 2;
   const cy = h / 2;
-  const breatheOffset = state === "idle-breathe" ? Math.sin(frame * 0.8) * 4 : 0;
+  const breatheOffset = category === "idle" ? Math.sin(frame * 0.8) * 4 : 0;
   const radius = 40 + breatheOffset;
 
   // Body
-  ctx.fillStyle = colors[state] || "#888";
+  ctx.fillStyle = categoryColors[category] || "#888";
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.fill();
@@ -135,8 +127,7 @@ function drawPlaceholder(
 
   // Pupils
   ctx.fillStyle = "#333";
-  if (state === "idle-sleep" || state === "lazy") {
-    // Closed / half-closed eyes
+  if (category === "sleep") {
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -150,48 +141,29 @@ function drawPlaceholder(
     ctx.arc(cx - 12 + eyeOffsetX, cy - 10, 4, 0, Math.PI * 2);
     ctx.arc(cx + 12 + eyeOffsetX, cy - 10, 4, 0, Math.PI * 2);
     ctx.fill();
-    // Angry eyebrows
-    if (state === "angry") {
-      ctx.strokeStyle = "#333";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(cx - 18, cy - 22);
-      ctx.lineTo(cx - 6, cy - 16);
-      ctx.moveTo(cx + 18, cy - 22);
-      ctx.lineTo(cx + 6, cy - 16);
-      ctx.stroke();
-    }
   }
 
-  // Mouth varies by state
+  // Mouth
   ctx.strokeStyle = "#333";
   ctx.lineWidth = 3;
   ctx.beginPath();
-  if (state === "happy") {
-    ctx.arc(cx, cy + 8, 12, 0, Math.PI);
-  } else if (state === "angry") {
-    ctx.arc(cx, cy + 14, 10, Math.PI, 0); // frown
-  } else if (state === "lazy") {
-    ctx.moveTo(cx - 10, cy + 12);
-    ctx.quadraticCurveTo(cx, cy + 8, cx + 10, cy + 12); // sleepy squiggle
-  } else if (state === "confused") {
-    ctx.moveTo(cx - 8, cy + 12);
-    ctx.lineTo(cx + 8, cy + 8);
-  } else if (state === "thinking") {
-    ctx.arc(cx, cy + 10, 6, 0, Math.PI * 2);
+  if (category === "poke" || category === "greet") {
+    ctx.arc(cx, cy + 8, 12, 0, Math.PI); // smile
+  } else if (category === "reaction") {
+    ctx.arc(cx, cy + 10, 6, 0, Math.PI * 2); // "o" mouth
   } else {
     ctx.moveTo(cx - 8, cy + 10);
-    ctx.lineTo(cx + 8, cy + 10);
+    ctx.lineTo(cx + 8, cy + 10); // neutral
   }
   ctx.stroke();
 
-  // Wave hand
-  if (state === "wave") {
+  // Wave hand for greet
+  if (category === "greet") {
     const handAngle = Math.sin(frame * 1.5) * 0.3;
     ctx.save();
     ctx.translate(cx + 35, cy - 20);
     ctx.rotate(handAngle);
-    ctx.fillStyle = colors[state];
+    ctx.fillStyle = categoryColors[category];
     ctx.beginPath();
     ctx.arc(0, 0, 12, 0, Math.PI * 2);
     ctx.fill();

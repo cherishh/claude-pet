@@ -1,0 +1,10 @@
+{
+  "name": "Claude",
+  "displayName": "Claude",
+  "binary": "claude",
+  "envRemove": ["CLAUDECODE"],
+  "args": ["--print", "--output-format", "stream-json"],
+  "streamFormat": "claude-stream-json",
+  "checkCommand": "which",
+  "installUrl": "https://docs.anthropic.com/en/docs/claude-code"
+}

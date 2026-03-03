@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::{claude, window};
+use commands::{ai, window};
 use tauri::{
     image::Image,
     menu::{MenuBuilder, MenuItemBuilder},
@@ -16,8 +16,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             window::set_click_through,
             window::toggle_chat_window,
-            claude::send_to_claude,
-            claude::check_claude_available,
+            ai::send_message,
+            ai::check_ai_available,
         ])
         .setup(|app| {
             let show = MenuItemBuilder::with_id("show", "Show Pet").build(app)?;
@@ -36,7 +36,7 @@ pub fn run() {
             TrayIconBuilder::new()
                 .icon(icon)
                 .menu(&menu)
-                .tooltip("Claude Pet")
+                .tooltip("Desktop Pet")
                 .on_menu_event(move |app, event| match event.id().as_ref() {
                     "show" => {
                         if let Some(w) = app.get_webview_window("pet") {

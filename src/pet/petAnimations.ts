@@ -1,31 +1,60 @@
-import type { PetState, AnimationDef, SpriteMeta } from "../shared/types";
+import type { AnimationDef, SpriteMeta } from "../shared/types";
 
-let cachedMeta: SpriteMeta | null = null;
+let metaPromise: Promise<SpriteMeta> | null = null;
 
-export async function loadSpriteMeta(): Promise<SpriteMeta> {
-  if (cachedMeta) return cachedMeta;
-  const res = await fetch("/sprites/sprite-meta.json");
-  cachedMeta = await res.json();
-  return cachedMeta!;
+export function loadSpriteMeta(): Promise<SpriteMeta> {
+  if (!metaPromise) {
+    metaPromise = fetch("/sprites/sprite-meta.json").then((res) => {
+      if (!res.ok) throw new Error(`Failed to load sprite-meta.json: ${res.status}`);
+      return res.json();
+    });
+  }
+  return metaPromise;
 }
 
-export const IDLE_STATES: PetState[] = ["idle-breathe", "idle-look"];
 export const IDLE_CYCLE_MS = 8000;
 export const SLEEP_TIMEOUT_MS = 60000;
 
-export function isIdleState(state: PetState): boolean {
-  return state.startsWith("idle-");
+export function getIdleStates(meta: SpriteMeta): string[] {
+  return Object.entries(meta.animations)
+    .filter(([_, def]) => def.category === "idle")
+    .map(([name]) => name);
 }
 
-export const POKE_REACTIONS: PetState[] = ["happy", "angry", "lazy", "confused", "wave"];
+export function getSleepState(meta: SpriteMeta): string | null {
+  const entry = Object.entries(meta.animations).find(
+    ([_, def]) => def.category === "sleep"
+  );
+  return entry ? entry[0] : null;
+}
 
-export function randomPokeReaction(): PetState {
-  return POKE_REACTIONS[Math.floor(Math.random() * POKE_REACTIONS.length)];
+export function getPokeReactions(meta: SpriteMeta): string[] {
+  return Object.entries(meta.animations)
+    .filter(([_, def]) => def.category === "poke")
+    .map(([name]) => name);
+}
+
+export function getNonLoopDuration(def: AnimationDef): number | null {
+  return def.loop ? null : def.frames * def.frameInterval;
+}
+
+export function isIdleState(meta: SpriteMeta, state: string): boolean {
+  const def = meta.animations[state];
+  return def?.category === "idle";
+}
+
+export function randomPokeReaction(meta: SpriteMeta): string {
+  const reactions = getPokeReactions(meta);
+  if (reactions.length === 0) {
+    const idleStates = getIdleStates(meta);
+    return idleStates[0] ?? "idle-breathe";
+  }
+  return reactions[Math.floor(Math.random() * reactions.length)];
 }
 
 export function getAnimationDef(
   meta: SpriteMeta,
-  state: PetState
-): AnimationDef {
+  state: string
+): AnimationDef | undefined {
   return meta.animations[state];
 }

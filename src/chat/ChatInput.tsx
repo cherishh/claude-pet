@@ -3,9 +3,10 @@ import { useState, useCallback } from "react";
 interface Props {
   onSend: (text: string) => void;
   disabled: boolean;
+  assistantName: string;
 }
 
-export function ChatInput({ onSend, disabled }: Props) {
+export function ChatInput({ onSend, disabled, assistantName }: Props) {
   const [text, setText] = useState("");
 
   const handleSubmit = useCallback(() => {
@@ -31,7 +32,7 @@ export function ChatInput({ onSend, disabled }: Props) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={disabled ? "Thinking..." : "Ask Claude anything..."}
+        placeholder={disabled ? "Thinking..." : `Ask ${assistantName} anything...`}
         disabled={disabled}
         style={styles.textarea}
         rows={2}
